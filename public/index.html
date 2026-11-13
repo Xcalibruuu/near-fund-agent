@@ -3,37 +3,83 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
     <title>Fund Desk · NEAR Fund Agent</title>
     <meta
       name="description"
-      content="A paper fund desk that marks a NEAR, BSC, and Solana book with live prices, asks NEAR Intents for dry quotes, and explains the rebalance in plain words."
+      content="Tell a fund agent what you want. It turns the goal into policy, asks NEAR Intents for real dry quotes across NEAR, BSC and Solana, and explains every paper move."
     />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@380;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="desk">
-      <header class="top">
-        <div>
-          <p class="eyebrow">NEAR Fund Agent · Built at NEAR HACKATHON</p>
-          <h1>One account.<br />Three books.</h1>
+    <div class="shell">
+      <nav class="bar" aria-label="Agent status">
+        <div class="brand">
+          <svg viewBox="0 0 32 32" aria-hidden="true" class="mark">
+            <rect x="1" y="1" width="30" height="30" rx="8" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="M9 23V9l14 14V9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" />
+          </svg>
+          <span>NEAR Fund Agent</span>
         </div>
-        <div class="stamp" aria-label="Paper mode, no funds move">Paper</div>
+        <div class="chips">
+          <span class="chip chip-paper" title="Quotes are dry runs. Nothing is signed or sent.">
+            <i class="dot"></i>Paper · no funds move
+          </span>
+          <span class="chip" title="What reads your goal and writes the memo">
+            Brain <b id="brain">Rules only</b>
+          </span>
+          <span class="chip" title="Auto-pilot state">
+            <i class="dot agent" id="agent-dot"></i><b id="auto-state">Idle</b>
+          </span>
+        </div>
+      </nav>
+
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Built at NEAR HACKATHON · NEAR Intents · chain signatures</p>
+          <h1>Say what you want.<br /><span class="hl">The fund moves on paper.</span></h1>
+          <p class="lede">
+            One NEAR account stands over a BSC bot and a Solana bot. Write a goal in plain words. The agent turns it
+            into targets and limits, asks NEAR Intents for real quotes, picks the route, and writes down why.
+          </p>
+        </div>
+
+        <form id="goal-form" class="console" aria-label="Fund goal">
+          <label for="goal">Goal</label>
+          <textarea
+            id="goal"
+            name="goal"
+            rows="3"
+            spellcheck="false"
+            placeholder="Keep 50% stable and move the rest to the best yield, low risk"
+          ></textarea>
+          <div class="try" role="group" aria-label="Example goals">
+            <button type="button" class="try-chip" data-goal="Keep 50% stable and move the rest to the best yield, low risk">
+              50% stable, best yield
+            </button>
+            <button type="button" class="try-chip" data-goal="Aggressive: 15% stable, 40% SOL, 25% NEAR">
+              Aggressive SOL tilt
+            </button>
+            <button type="button" class="try-chip" data-goal="Safe: 60% stables, 20% NEAR, 10% BNB, 10% SOL">
+              Safe, mostly stables
+            </button>
+          </div>
+          <div class="console-row">
+            <button type="submit" class="primary">Set goal</button>
+            <button type="button" class="ghost" id="goal-reset">Default policy</button>
+          </div>
+          <div id="goal-note" class="goal-note" aria-live="polite"></div>
+        </form>
       </header>
 
-      <p class="lede">
-        The BSC liquidity bot and the Solana bot do not share a wallet. This desk marks that inventory in USD,
-        asks NEAR Intents for a real dry quote, and writes down why a NEAR account would move it. The stamp stays on.
-        Nothing is signed and nothing is sent.
-      </p>
-
-      <div class="toolbar">
+      <section class="strip" aria-label="Account and prices">
         <form id="account-form" class="account">
           <label for="account">NEAR account that would sign</label>
           <div class="account-row">
@@ -42,7 +88,7 @@
           </div>
         </form>
         <div class="prices" id="prices" aria-live="polite"></div>
-      </div>
+      </section>
       <p class="addresses" id="addresses">Addresses appear after a read of v1.signer. The view call does not sign.</p>
       <p class="status" id="status" role="status">Opening the book…</p>
 
@@ -60,7 +106,7 @@
         <article class="card">
           <header class="card-head">
             <h2>Policy</h2>
-            <p>USD weights</p>
+            <p>weight vs target</p>
           </header>
           <div id="sleeves"></div>
           <ul class="rules" id="rules"></ul>
@@ -68,14 +114,24 @@
         <article class="card">
           <header class="card-head">
             <h2>Yields</h2>
-            <p>Live, filtered</p>
+            <p>live, filtered</p>
           </header>
           <div id="yields"></div>
         </article>
       </section>
 
       <div class="actions">
-        <button id="run" class="primary" disabled>Run paper cycle</button>
+        <button id="run" class="primary big" disabled>Run paper cycle</button>
+        <div class="auto">
+          <button id="auto" class="ghost" aria-pressed="false">Start auto-pilot</button>
+          <label class="auto-every" for="auto-every">every</label>
+          <select id="auto-every" aria-label="Auto-pilot interval">
+            <option value="20">20s</option>
+            <option value="45" selected>45s</option>
+            <option value="90">90s</option>
+            <option value="300">5m</option>
+          </select>
+        </div>
         <button id="reset" class="ghost">Reset book</button>
         <p class="action-note" id="action-note">Quotes use dry: true. A deposit address is discarded if one appears.</p>
       </div>
@@ -83,21 +139,21 @@
       <section class="memo" id="memo" aria-live="polite">
         <p class="eyebrow">Decision memo</p>
         <h2>Waiting for the first cycle.</h2>
-        <p>The chart above is already marked with live token prices when the feed connects. The cycle is what asks the solver.</p>
+        <p>The book above is already marked with live token prices. The cycle is what asks the solver.</p>
       </section>
 
       <section class="card quotes-card" id="quotes" hidden>
         <header class="card-head">
           <h2>Quote comparison</h2>
-          <p>Same notional, live dry quotes</p>
+          <p>same notional, live dry quotes</p>
         </header>
-        <div id="quote-table"></div>
+        <div id="quote-table" class="table-wrap"></div>
       </section>
 
       <section class="log" id="log">
         <header class="card-head">
           <h2>Intent log</h2>
-          <p>Each cycle, in the agent’s words</p>
+          <p>every cycle, in the agent’s words</p>
         </header>
         <div id="log-list">
           <p class="empty">No cycle yet.</p>
@@ -106,9 +162,10 @@
 
       <footer>
         <p>
-          NEAR Intents prices the route. Chain signatures show the BSC and Solana addresses one NEAR account would control.
-          Chain abstraction is the USD policy: you do not pick a bridge. NEAR AI Cloud rewrites the memo only when
-          <code>NEAR_AI_API_KEY</code> is set on the local server. The policy still decides.
+          NEAR Intents prices the route. Chain signatures show the BSC and Solana addresses one NEAR account would
+          control. Chain abstraction is the USD policy: you do not pick a bridge. NEAR AI Cloud reads your goal and
+          rewrites the memo when <code>NEAR_AI_API_KEY</code> is set on the local server. The policy limits always
+          decide, and a model can only tighten them.
         </p>
         <p class="footer-links">
           <a href="https://docs.near-intents.org/">1Click docs</a>

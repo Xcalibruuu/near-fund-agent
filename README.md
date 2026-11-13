@@ -1,6 +1,6 @@
 # NEAR Fund Agent
 
-A paper fund desk for someone who already runs inventory on more than one chain. It marks a NEAR, BSC, and Solana book with live prices, asks NEAR Intents for real dry quotes, and writes the rebalance decision in plain words. One NEAR account is the signer. Chain signatures show the BSC and Solana addresses that account would control. The default mode never moves money.
+A paper fund desk for someone who already runs inventory on more than one chain. Tell it a goal in plain words ("keep 50% stable, rest to the best yield, low risk") and it turns that into policy, then rebalances on its own in auto-pilot. It marks a NEAR, BSC, and Solana book with live prices, asks NEAR Intents for real dry quotes, and writes the rebalance decision in plain words. One NEAR account is the signer. Chain signatures show the BSC and Solana addresses that account would control. The default mode never moves money.
 
 Built at [NEAR HACKATHON](https://nearhackathon.com/) (Build Beyond Boundaries), 1 to 14 Nov 2026. Tracks this is aimed at: `defi` and `agents`.
 
@@ -18,6 +18,12 @@ A reviewer can do the following and see the result named on the right.
 `npm run cycle` prints the same memo in the terminal.
 
 The static desk also runs without this server. `npm run build` writes `public/app.js`. Opening that folder on GitHub Pages calls 1Click, DefiLlama, and NEAR RPC from the browser. The hosted URL after the Pages workflow runs on `main` is https://xcalibruuu.github.io/near-fund-agent/ .
+
+## Goal and auto-pilot
+
+- **Goal box.** The text becomes targets and limits. With `NEAR_AI_API_KEY` set, NEAR AI Cloud reads the goal and returns JSON. Without a key, a rules parser reads shares like `50% stable` and words like `low risk` or `best yield`. See `src/goal.ts`.
+- **A model can only tighten.** Whatever the model returns is validated and clamped. Trade size and the quote loss cap can go down, never above the defaults. Targets must fit in 100%. If the model fails or answers badly, the rules parser takes over.
+- **Auto-pilot.** The desk runs a paper cycle every 20 s, 45 s, 90 s or 5 min, up to 12 times, and tags each log entry `auto-pilot` or `manual`. It still moves no funds.
 
 ## The problem
 
@@ -182,6 +188,10 @@ GitHub Actions (`.github/workflows/ci.yml`) runs tests, `tsc`, and the browser b
 ## Libraries
 
 Runtime dependencies are `@noble/hashes` (keccak256), `@scure/base` (base58), `esbuild`, `tsx`, and `typescript`. Tests use Vitest. No pre-hackathon code of the author's is included. The initial commit on `main` was a title line.
+
+## Demo recording
+
+`GROK_DEMO_BRIEF.md` is the shot list and rules for recording the 90 second demo.
 
 ## Still for the human
 

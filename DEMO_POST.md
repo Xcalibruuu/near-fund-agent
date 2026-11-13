@@ -13,7 +13,7 @@ I run a BSC liquidity bot and a Solana bot. The inventory is split. This agent r
 ## Alternate A
 
 ```text
-One NEAR account, three chains. Fund Desk asks NEAR Intents for a real dry quote and shows the BSC and Solana addresses chain signatures would control. It stays on paper. Built at NEAR HACKATHON. https://github.com/Xcalibruuu/near-fund-agent @NEARProtocol #NEARHackathon
+Tell the agent what you want: "keep 50% stable, rest to best yield". It sets the policy, asks NEAR Intents for real quotes on BSC, Solana and NEAR, and explains each paper move. Built at NEAR HACKATHON. https://github.com/Xcalibruuu/near-fund-agent @NEARProtocol #NEARHackathon
 ```
 
 ## Alternate B

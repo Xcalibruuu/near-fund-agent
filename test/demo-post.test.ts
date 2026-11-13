@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 describe("demo post drafts", () => {
   it("keeps each draft under 280 characters, with the required tag and no dash spam", () => {
-    const text = readFileSync(new URL("../DEMO_POST.md", import.meta.url), "utf8");
+    const text = readFileSync(new URL("../DEMO_POST.md", import.meta.url), "utf8").replaceAll("\r\n", "\n");
     const drafts = [...text.matchAll(/```text\n([\s\S]*?)```/g)].map((match) => match[1]?.trim() ?? "");
     expect(drafts.length).toBe(3);
     for (const draft of drafts) {
