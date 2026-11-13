@@ -220,6 +220,10 @@ After a paper cycle, with the quote table and the memo:
 
 ![Paper cycle quote comparison](docs/screenshots/cycle.png)
 
+The same desk at a phone width. The three start steps stack:
+
+![Fund desk on a narrow screen](docs/screenshots/mobile.png)
+
 ## Tests and CI
 
 `npm test` covers base-unit conversion, EVM and Solana address derivation, the drifted-book plan, the cheaper-but-ineligible quote, the fee cap, the yield-horizon check, the dry-quote gate, and the length of the X drafts in `DEMO_POST.md`.
