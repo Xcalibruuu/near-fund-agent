@@ -1,4 +1,5 @@
 import { addressFromMpcKey, isNearAccount } from "./address.js";
+import { chainById } from "./chains.js";
 import type { DerivedAddresses, LlamaPool, TokenPrice } from "./types.js";
 
 export const DEFAULT_ONECLICK = "https://1click.chaindefuser.com";
@@ -120,16 +121,27 @@ export async function deriveAddresses(
   fetchImpl: FetchLike = fetch,
 ): Promise<DerivedAddresses> {
   if (!isNearAccount(accountId)) throw new Error("That is not a NEAR account id");
+  const bsc = chainById("bsc");
+  const solana = chainById("solana");
+  if (!bsc.derivation || !solana.derivation) throw new Error("Demo chains are missing derivation");
   const [bscKey, solKey] = await Promise.all([
-    derivedKey(rpcUrl, { path: "bsc-1", predecessor: accountId, domain_id: 0 }, fetchImpl),
-    derivedKey(rpcUrl, { path: "solana-1", predecessor: accountId, domain_id: 1 }, fetchImpl),
+    derivedKey(
+      rpcUrl,
+      { path: bsc.derivation.path, predecessor: accountId, domain_id: bsc.derivation.domainId },
+      fetchImpl,
+    ),
+    derivedKey(
+      rpcUrl,
+      { path: solana.derivation.path, predecessor: accountId, domain_id: solana.derivation.domainId },
+      fetchImpl,
+    ),
   ]);
   return {
     accountId,
     bsc: addressFromMpcKey(bscKey).address,
     solana: addressFromMpcKey(solKey).address,
-    bscPath: "bsc-1",
-    solanaPath: "solana-1",
+    bscPath: bsc.derivation.path,
+    solanaPath: solana.derivation.path,
     contractId: SIGNER_CONTRACT,
   };
 }

@@ -131,7 +131,15 @@ function persist(): void {
 }
 
 function accountId(): string {
-  return (document.querySelector<HTMLInputElement>("#account")?.value || "near").trim().toLowerCase();
+  return (document.querySelector<HTMLInputElement>("#account")?.value || "xcalibruuu.near").trim().toLowerCase();
+}
+
+function setModeNote(): void {
+  const note = document.querySelector("#mode-note");
+  if (!note) return;
+  note.textContent = state.server
+    ? "Local server is on. Paper mode still never signs or sends."
+    : "Static page. Goals, quotes, and auto-pilot run in this browser. Nothing is signed or sent.";
 }
 
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string): HTMLElementTagNameMap[K] {
@@ -154,12 +162,23 @@ function setStatus(text: string, warn = false): void {
   status.classList.toggle("warn", warn);
 }
 
+async function probeServer(): Promise<{ ok: boolean; llm?: string }> {
+  try {
+    const response = await fetch("api/health", { signal: AbortSignal.timeout(1500) });
+    const type = response.headers.get("content-type") || "";
+    if (!response.ok || !type.includes("json")) return { ok: false };
+    const body = (await response.json()) as { ok?: boolean; llm?: string; product?: string };
+    if (body.ok !== true || body.product !== "NEAR Fund Agent") return { ok: false };
+    return { ok: true, llm: body.llm };
+  } catch {
+    return { ok: false };
+  }
+}
+
 async function boot(): Promise<void> {
   try {
-    const health = await fetch("api/health", { signal: AbortSignal.timeout(2000) })
-      .then(async (response) => (response.ok ? ((await response.json()) as { ok?: boolean; llm?: string }) : null))
-      .catch(() => null);
-    if (health?.ok) {
+    const health = await probeServer();
+    if (health.ok) {
       state.server = true;
       state.llm = health.llm ?? "off";
       await refreshFromServer();
@@ -168,9 +187,41 @@ async function boot(): Promise<void> {
       await refreshDirect();
     }
   } catch (error) {
+    state.server = false;
     setStatus(error instanceof Error ? error.message : "The feeds did not load.", true);
   }
+  setModeNote();
   render();
+}
+
+async function runInBrowser(): Promise<CycleResult> {
+  const pools = await fetchYieldPools();
+  let addresses = state.addresses;
+  let addressError = state.addressError;
+  try {
+    addresses = await deriveAddresses(accountId());
+    addressError = undefined;
+  } catch (error) {
+    addressError = error instanceof Error ? error.message : "Derivation failed";
+  }
+  return runCycle({
+    book: state.book,
+    policy: state.policy,
+    accountId: accountId(),
+    clients: {
+      prices: state.prices,
+      pools,
+      addresses,
+      addressError,
+      quote: (_job, request) => postDryQuote(request),
+    },
+  });
+}
+
+function rulesForGoal(trimmed: string): { policy: Policy; note: string[] } {
+  const goal = parseGoalRules(trimmed);
+  const policy = applyGoal(goal);
+  return { policy, note: describeGoal(goal, policy) };
 }
 
 async function refreshFromServer(): Promise<void> {
@@ -208,6 +259,7 @@ async function refreshDirect(): Promise<void> {
     state.addressError = error instanceof Error ? error.message : "Derivation failed";
   }
   setStatus("Live feeds loaded in the browser. A paper cycle requests dry quotes directly.");
+  setModeNote();
 }
 
 async function deriveOnly(): Promise<void> {
@@ -237,37 +289,28 @@ async function run(trigger: "manual" | "auto" = "manual"): Promise<void> {
   render();
   try {
     let result: CycleResult;
+    let usedBrowser = !state.server;
     if (state.server) {
-      const response = await fetch("api/cycle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accountId: accountId(), book: state.book, policy: state.policy }),
-      });
-      const body = (await response.json()) as CycleResult & { message?: string };
-      if (!response.ok) throw new Error(body.message || "Cycle failed");
-      result = body;
-    } else {
-      const pools = await fetchYieldPools();
-      let addresses = state.addresses;
-      let addressError = state.addressError;
       try {
-        addresses = await deriveAddresses(accountId());
-        addressError = undefined;
+        const response = await fetch("api/cycle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accountId: accountId(), book: state.book, policy: state.policy }),
+        });
+        const type = response.headers.get("content-type") || "";
+        if (!type.includes("json")) throw new Error("not-json");
+        const body = (await response.json()) as CycleResult & { message?: string };
+        if (!response.ok) throw new Error(body.message || "Cycle failed");
+        result = body;
       } catch (error) {
-        addressError = error instanceof Error ? error.message : "Derivation failed";
+        const message = error instanceof Error ? error.message : "";
+        if (message !== "not-json" && !(error instanceof TypeError)) throw error;
+        state.server = false;
+        usedBrowser = true;
+        result = await runInBrowser();
       }
-      result = await runCycle({
-        book: state.book,
-        policy: state.policy,
-        accountId: accountId(),
-        clients: {
-          prices: state.prices,
-          pools,
-          addresses,
-          addressError,
-          quote: (_job, request) => postDryQuote(request),
-        },
-      });
+    } else {
+      result = await runInBrowser();
     }
     state.result = result;
     state.book = sanitizeBook(result.nextBook);
@@ -285,11 +328,13 @@ async function run(trigger: "manual" | "auto" = "manual"): Promise<void> {
     state.log = state.log.slice(0, LOG_LIMIT);
     persist();
     const fills = result.decision.legs.filter((leg) => leg.chosen).length;
+    const where = usedBrowser ? " In the browser, from live dry quotes." : "";
     setStatus(
       result.decision.action === "rebalance"
-        ? `${trigger === "auto" ? "Auto-pilot: p" : "P"}aper cycle recorded ${fills} fill${fills === 1 ? "" : "s"}. No funds moved.`
-        : "Paper cycle finished with a hold. No funds moved.",
+        ? `${trigger === "auto" ? "Auto-pilot: p" : "P"}aper cycle recorded ${fills} fill${fills === 1 ? "" : "s"}. No funds moved.${where}`
+        : `Paper cycle finished with a hold. No funds moved.${where}`,
     );
+    setModeNote();
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Cycle failed", true);
   } finally {
@@ -313,26 +358,39 @@ async function submitGoal(text: string): Promise<void> {
     let policy: Policy;
     let note: string[];
     let source = "rules";
+    let browserRules = !state.server;
     if (state.server) {
-      const response = await fetch("api/goal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goal: trimmed }),
-      });
-      const body = (await response.json()) as {
-        message?: string;
-        policy: Policy;
-        summary: string[];
-        source: string;
-      };
-      if (!response.ok) throw new Error(body.message || "The goal was not accepted");
-      policy = sanitizePolicy(body.policy);
-      note = body.summary;
-      source = body.source;
+      try {
+        const response = await fetch("api/goal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ goal: trimmed }),
+        });
+        const type = response.headers.get("content-type") || "";
+        if (!type.includes("json")) throw new Error("not-json");
+        const body = (await response.json()) as {
+          message?: string;
+          policy: Policy;
+          summary: string[];
+          source: string;
+        };
+        if (!response.ok) throw new Error(body.message || "The goal was not accepted");
+        policy = sanitizePolicy(body.policy);
+        note = body.summary;
+        source = body.source;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        if (message !== "not-json" && !(error instanceof TypeError)) throw error;
+        state.server = false;
+        const rules = rulesForGoal(trimmed);
+        policy = rules.policy;
+        note = rules.note;
+        browserRules = true;
+      }
     } else {
-      const goal = parseGoalRules(trimmed);
-      policy = applyGoal(goal);
-      note = describeGoal(goal, policy);
+      const rules = rulesForGoal(trimmed);
+      policy = rules.policy;
+      note = rules.note;
     }
     state.policy = policy;
     state.goalNote = note;
@@ -342,8 +400,11 @@ async function submitGoal(text: string): Promise<void> {
     setStatus(
       source === "near-ai"
         ? "NEAR AI Cloud read the goal. The policy limits still apply. Run a paper cycle to act on it."
-        : "Goal read by the rules parser. Run a paper cycle to act on it.",
+        : browserRules
+          ? "Goal read in the browser by the rules parser. A model can only tighten limits, and none is connected here. Run a paper cycle to act on it."
+          : "Goal read by the rules parser. Run a paper cycle to act on it.",
     );
+    setModeNote();
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "The goal was not accepted", true);
   } finally {

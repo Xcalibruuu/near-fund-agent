@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Poppins:wght@500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -41,17 +41,32 @@
         </div>
       </nav>
 
-      <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Built at NEAR HACKATHON · NEAR Intents · chain signatures</p>
-          <h1>Say what you want.<br /><span class="hl">The fund moves on paper.</span></h1>
-          <p class="lede">
-            One NEAR account stands over a BSC bot and a Solana bot. Write a goal in plain words. The agent turns it
-            into targets and limits, asks NEAR Intents for real quotes, picks the route, and writes down why.
-          </p>
-        </div>
+      <header class="intro">
+        <p class="eyebrow">Built at NEAR HACKATHON · NEAR Intents · chain signatures</p>
+        <h1>One desk for a split book.</h1>
+        <p class="lede">
+          The BSC liquidity bot and the Solana bot keep inventory in different wallets. This desk reads live yields and
+          NEAR Intents quotes, then explains a paper rebalance from one NEAR account. Nothing is signed or sent.
+        </p>
+      </header>
 
-        <form id="goal-form" class="console" aria-label="Fund goal">
+      <ol class="start" aria-label="Start here">
+        <li>
+          <span>01</span>
+          <p><b>Enter a NEAR account.</b> The field starts as xcalibruuu.near. Derive addresses. That read does not sign.</p>
+        </li>
+        <li>
+          <span>02</span>
+          <p><b>Run a paper cycle.</b> Click Run paper cycle. The quotes are dry. No funds move.</p>
+        </li>
+        <li>
+          <span>03</span>
+          <p><b>Read the result.</b> The Decision memo and the Intent log say why, in plain words.</p>
+        </li>
+      </ol>
+      <p class="mode-note" id="mode-note">Checking whether this page has a local server…</p>
+
+      <form id="goal-form" class="console" aria-label="Fund goal">
           <label for="goal">Goal</label>
           <textarea
             id="goal"
@@ -77,13 +92,12 @@
           </div>
           <div id="goal-note" class="goal-note" aria-live="polite"></div>
         </form>
-      </header>
 
       <section class="strip" aria-label="Account and prices">
         <form id="account-form" class="account">
           <label for="account">NEAR account that would sign</label>
           <div class="account-row">
-            <input id="account" name="account" autocomplete="off" spellcheck="false" value="near" />
+            <input id="account" name="account" autocomplete="off" spellcheck="false" value="xcalibruuu.near" />
             <button type="submit" class="ghost">Derive addresses</button>
           </div>
         </form>
@@ -103,21 +117,23 @@
             <div id="positions"></div>
           </div>
         </article>
-        <article class="card">
-          <header class="card-head">
-            <h2>Policy</h2>
-            <p>weight vs target</p>
-          </header>
-          <div id="sleeves"></div>
-          <ul class="rules" id="rules"></ul>
-        </article>
-        <article class="card">
-          <header class="card-head">
-            <h2>Yields</h2>
-            <p>live, filtered</p>
-          </header>
-          <div id="yields"></div>
-        </article>
+        <div class="rail">
+          <article class="card">
+            <header class="card-head">
+              <h2>Policy</h2>
+              <p>weight vs target</p>
+            </header>
+            <div id="sleeves"></div>
+            <ul class="rules" id="rules"></ul>
+          </article>
+          <article class="card">
+            <header class="card-head">
+              <h2>Yields</h2>
+              <p>live, filtered</p>
+            </header>
+            <div id="yields"></div>
+          </article>
+        </div>
       </section>
 
       <div class="actions">

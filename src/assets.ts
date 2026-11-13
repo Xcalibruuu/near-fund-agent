@@ -1,70 +1,33 @@
-import type { Asset, Sleeve } from "./types.js";
+import { CHAINS, demoChains } from "./chains.js";
+import type { Asset, ChainId, Sleeve } from "./types.js";
 
 /**
- * Asset ids are the live 1Click identifiers (GET /v0/tokens), pinned so a
- * paper cycle does not depend on a search through deprecated nep245 rows.
- * BSC USDT is listed because that is the inventory pair, and the solver
- * currently returns 500 for it. The agent still requests the quote and
- * records the failure, then uses another route.
+ * Paper-book assets. Ids are pinned from GET /v0/tokens so a cycle does not
+ * pick a deprecated row. BSC USDT is included because that is the inventory
+ * pair. The solver has returned 500 for it. The agent records that and uses
+ * another route.
+ *
+ * Chains that are not in the demo (Base, Ethereum, Arbitrum, Optimism,
+ * Hyperliquid) live on the registry in src/chains.ts and are not positions.
  */
-export const ASSETS: Record<string, Asset> = {
-  wNEAR: {
-    key: "wNEAR",
-    chain: "near",
-    symbol: "wNEAR",
-    sleeve: "NEAR",
-    decimals: 24,
-    assetId: "nep141:wrap.near",
-  },
-  nearUsdt: {
-    key: "nearUsdt",
-    chain: "near",
-    symbol: "USDT",
-    sleeve: "STABLE",
-    decimals: 6,
-    assetId: "nep141:usdt.tether-token.near",
-  },
-  bnb: {
-    key: "bnb",
-    chain: "bsc",
-    symbol: "BNB",
-    sleeve: "BNB",
-    decimals: 18,
-    assetId: "nep141:bnb.omdep.near",
-  },
-  bscUsdt: {
-    key: "bscUsdt",
-    chain: "bsc",
-    symbol: "USDT",
-    sleeve: "STABLE",
-    decimals: 18,
-    assetId: "nep141:bnb-0x55d398326f99059ff775485246999027b3197955.omdep.near",
-  },
-  bscUsdc: {
-    key: "bscUsdc",
-    chain: "bsc",
-    symbol: "USDC",
-    sleeve: "STABLE",
-    decimals: 18,
-    assetId: "nep141:bnb-0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d.omdep.near",
-  },
-  sol: {
-    key: "sol",
-    chain: "solana",
-    symbol: "SOL",
-    sleeve: "SOL",
-    decimals: 9,
-    assetId: "nep141:sol.omft.near",
-  },
-  solUsdc: {
-    key: "solUsdc",
-    chain: "solana",
-    symbol: "USDC",
-    sleeve: "STABLE",
-    decimals: 6,
-    assetId: "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
-  },
-};
+function demoAssets(): Record<string, Asset> {
+  const book: Record<string, Asset> = {};
+  for (const chain of demoChains()) {
+    for (const asset of chain.assets) {
+      book[asset.key] = {
+        key: asset.key,
+        chain: chain.id as ChainId,
+        symbol: asset.symbol,
+        sleeve: asset.sleeve,
+        decimals: asset.decimals,
+        assetId: asset.assetId,
+      };
+    }
+  }
+  return book;
+}
+
+export const ASSETS: Record<string, Asset> = demoAssets();
 
 export const ASSET_LIST = Object.values(ASSETS);
 
@@ -84,8 +47,12 @@ export const SLEEVE_BUY: Record<Sleeve, string> = {
   STABLE: "nearUsdt",
 };
 
-export const CHAIN_LABEL: Record<Asset["chain"], string> = {
+export const CHAIN_LABEL: Record<ChainId, string> = {
   near: "NEAR",
   bsc: "BSC",
   solana: "Solana",
 };
+
+export function chainLabel(id: string): string {
+  return CHAINS.find((chain) => chain.id === id)?.label ?? id;
+}
