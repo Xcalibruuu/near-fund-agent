@@ -1,0 +1,28 @@
+{
+  "name": "near-fund-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Paper fund desk that rebalances a cross-chain book with live NEAR Intents quotes and chain-signature addresses.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsx src/build.ts",
+    "start": "tsx src/build.ts && tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "cycle": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.8.0",
+    "@scure/base": "^1.2.5",
+    "esbuild": "^0.25.5",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.17.0",
+    "vitest": "^3.2.4"
+  }
+}

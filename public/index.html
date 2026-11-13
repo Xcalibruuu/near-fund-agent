@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fund Desk · NEAR Fund Agent</title>
+    <meta
+      name="description"
+      content="A paper fund desk that marks a NEAR, BSC, and Solana book with live prices, asks NEAR Intents for dry quotes, and explains the rebalance in plain words."
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@380;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="desk">
+      <header class="top">
+        <div>
+          <p class="eyebrow">NEAR Fund Agent · Built at NEAR HACKATHON</p>
+          <h1>One account.<br />Three books.</h1>
+        </div>
+        <div class="stamp" aria-label="Paper mode, no funds move">Paper</div>
+      </header>
+
+      <p class="lede">
+        The BSC liquidity bot and the Solana bot do not share a wallet. This desk marks that inventory in USD,
+        asks NEAR Intents for a real dry quote, and writes down why a NEAR account would move it. The stamp stays on.
+        Nothing is signed and nothing is sent.
+      </p>
+
+      <div class="toolbar">
+        <form id="account-form" class="account">
+          <label for="account">NEAR account that would sign</label>
+          <div class="account-row">
+            <input id="account" name="account" autocomplete="off" spellcheck="false" value="near" />
+            <button type="submit" class="ghost">Derive addresses</button>
+          </div>
+        </form>
+        <div class="prices" id="prices" aria-live="polite"></div>
+      </div>
+      <p class="addresses" id="addresses">Addresses appear after a read of v1.signer. The view call does not sign.</p>
+      <p class="status" id="status" role="status">Opening the book…</p>
+
+      <section class="board" aria-label="Portfolio">
+        <article class="card card-book">
+          <header class="card-head">
+            <h2>Book</h2>
+            <p id="total">—</p>
+          </header>
+          <div class="book-layout">
+            <div id="donut" class="donut"></div>
+            <div id="positions"></div>
+          </div>
+        </article>
+        <article class="card">
+          <header class="card-head">
+            <h2>Policy</h2>
+            <p>USD weights</p>
+          </header>
+          <div id="sleeves"></div>
+          <ul class="rules" id="rules"></ul>
+        </article>
+        <article class="card">
+          <header class="card-head">
+            <h2>Yields</h2>
+            <p>Live, filtered</p>
+          </header>
+          <div id="yields"></div>
+        </article>
+      </section>
+
+      <div class="actions">
+        <button id="run" class="primary" disabled>Run paper cycle</button>
+        <button id="reset" class="ghost">Reset book</button>
+        <p class="action-note" id="action-note">Quotes use dry: true. A deposit address is discarded if one appears.</p>
+      </div>
+
+      <section class="memo" id="memo" aria-live="polite">
+        <p class="eyebrow">Decision memo</p>
+        <h2>Waiting for the first cycle.</h2>
+        <p>The chart above is already marked with live token prices when the feed connects. The cycle is what asks the solver.</p>
+      </section>
+
+      <section class="card quotes-card" id="quotes" hidden>
+        <header class="card-head">
+          <h2>Quote comparison</h2>
+          <p>Same notional, live dry quotes</p>
+        </header>
+        <div id="quote-table"></div>
+      </section>
+
+      <section class="log" id="log">
+        <header class="card-head">
+          <h2>Intent log</h2>
+          <p>Each cycle, in the agent’s words</p>
+        </header>
+        <div id="log-list">
+          <p class="empty">No cycle yet.</p>
+        </div>
+      </section>
+
+      <footer>
+        <p>
+          NEAR Intents prices the route. Chain signatures show the BSC and Solana addresses one NEAR account would control.
+          Chain abstraction is the USD policy: you do not pick a bridge. NEAR AI Cloud rewrites the memo only when
+          <code>NEAR_AI_API_KEY</code> is set on the local server. The policy still decides.
+        </p>
+        <p class="footer-links">
+          <a href="https://docs.near-intents.org/">1Click docs</a>
+          <a href="https://docs.near.org/chain-abstraction/chain-signatures">Chain signatures</a>
+          <a href="https://github.com/Xcalibruuu/near-fund-agent">Repository</a>
+        </p>
+      </footer>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
