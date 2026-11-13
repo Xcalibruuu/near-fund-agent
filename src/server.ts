@@ -19,6 +19,7 @@ import { buildLiveQuoteRequest } from "./live-quote.js";
 import { liveQuoteAllowed, llmMode } from "./live-gate.js";
 import { rewriteMemo } from "./llm.js";
 import { selectContextPool, selectVenues } from "./yields.js";
+import { interpretGoal, sanitizePolicy } from "./goal.js";
 import type { LlamaPool, TokenPrice } from "./types.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -162,8 +163,9 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (req.method === "POST" && url.pathname === "/api/cycle") {
-      const body = (await readJson(req)) as { accountId?: string; book?: unknown };
+      const body = (await readJson(req)) as { accountId?: string; book?: unknown; policy?: unknown };
       const accountId = body.accountId || "near";
+      const policy = sanitizePolicy(body.policy);
       const book = sanitizeBook(body.book ?? INITIAL_BOOK);
       const [tokens, rows] = await Promise.all([getPrices(), getPools()]);
       let addresses = null;
@@ -175,7 +177,7 @@ const server = createServer(async (req, res) => {
       }
       const result = await runCycle({
         book,
-        policy: DEFAULT_POLICY,
+        policy,
         accountId,
         clients: {
           prices: tokens,
@@ -187,6 +189,11 @@ const server = createServer(async (req, res) => {
         },
       });
       send(res, 200, result);
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/api/goal") {
+      const body = (await readJson(req)) as { goal?: string };
+      send(res, 200, await interpretGoal(String(body.goal ?? "")));
       return;
     }
     if (req.method === "POST" && url.pathname === "/api/live-quote") {

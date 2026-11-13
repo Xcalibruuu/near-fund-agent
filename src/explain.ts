@@ -3,9 +3,13 @@ import { formatAmount, formatBps, formatUsd } from "./money.js";
 import type { CycleResult, DecisionLeg, MarkedPosition, ScoredQuote, SleeveSnapshot } from "./types.js";
 import type { Policy } from "./types.js";
 
+function share(value: number): string {
+  return (value * 100).toFixed(1).replace(/\.0$/, "");
+}
+
 function sleeveLine(sleeve: SleeveSnapshot): string {
   const direction = sleeve.drift >= 0 ? "over" : "under";
-  return `${sleeve.sleeve} is ${formatUsd(sleeve.valueUsd)} (${(sleeve.weight * 100).toFixed(1)}%, target ${(sleeve.target * 100).toFixed(0)}%, ${Math.abs(sleeve.drift * 100).toFixed(1)} points ${direction})`;
+  return `${sleeve.sleeve} is ${formatUsd(sleeve.valueUsd)} (${(sleeve.weight * 100).toFixed(1)}%, target ${share(sleeve.target)}%, ${Math.abs(sleeve.drift * 100).toFixed(1)} points ${direction})`;
 }
 
 function routeName(quote: ScoredQuote): string {
@@ -78,7 +82,7 @@ export function explainCycle(input: {
   );
 
   lines.push(
-    `Policy wants NEAR ${policy.targets.NEAR * 100}%, BNB ${policy.targets.BNB * 100}%, SOL ${policy.targets.SOL * 100}%, and stables ${policy.targets.STABLE * 100}%. ${sleeves.map(sleeveLine).join(". ")}.`,
+    `Policy wants NEAR ${share(policy.targets.NEAR)}%, BNB ${share(policy.targets.BNB)}%, SOL ${share(policy.targets.SOL)}%, and stables ${share(policy.targets.STABLE)}%. ${sleeves.map(sleeveLine).join(". ")}.`,
   );
 
   if (overweight && overweight.driftBps > policy.driftBps) {

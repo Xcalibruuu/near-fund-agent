@@ -123,6 +123,8 @@ export type DerivedAddresses = {
   bscPath: string;
   solanaPath: string;
   contractId: string;
+  /** Addresses for registry rows that are not the demo pair. Keyed by chain id. */
+  extra?: Record<string, string>;
 };
 
 export type TokenPrice = {
